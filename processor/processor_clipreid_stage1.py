@@ -69,12 +69,10 @@ def do_train_stage1(cfg,
                 for i, img_feat in zip(target, image_feature):
                     labels.append(i)
                     image_features.append(img_feat.cpu())
-                    # image_features_original.append(img_feat_original.cpu())
+                    
                     
         labels_list = torch.stack(labels, dim=0).cuda() #N
         image_features_list = torch.stack(image_features, dim=0).cuda()
-        # img_feat_original_list = torch.stack(image_features_original, dim=0).cuda()
-
         batch = cfg.SOLVER.STAGE1.IMS_PER_BATCH
         num_image = labels_list.shape[0]
         i_ter = num_image // batch
