@@ -43,7 +43,7 @@ SOLVER:
     WARMUP_EPOCHS: 5
   
   STAGE2:
-    IMS_PER_BATCH: 16   #  32
+    IMS_PER_BATCH: 32   #  32
     OPTIMIZER_NAME: "Adam"
     BASE_LR: 0.000005 #0.000005
     WARMUP_METHOD: 'linear'
@@ -72,7 +72,7 @@ DATASETS:
    NAMES: ('ltcc')
    ROOT_DIR: ('/hy-tmp/data')
 
-OUTPUT_DIR: '/hy-tmp/output/base_mask_tcl0.5_gll_head_0.5'
+OUTPUT_DIR: '/hy-tmp/output/'
 
 
 
