@@ -145,11 +145,6 @@ class build_transformer(nn.Module):
                        # (32, 289, 768)           # (32, 289, 512)
             image_features_last, image_features, image_features_proj = self.image_encoder(x, cv_embed)
 
-            if noise_img is not None:
-                noise_image_features_last, noise_image_features, noise_image_features_proj = self.image_encoder(noise_img, cv_embed)
-                                             # (32, 289, 768)        # (32, 289, 512)
-
-
             img_feature_last = image_features_last[:,0]
             img_feature =(image_features[:,0])
             img_feature_proj = (image_features_proj[:,0])
