@@ -9,7 +9,7 @@ from .softmax_loss import CrossEntropyLabelSmooth, LabelSmoothingCrossEntropy
 from .triplet_loss import TripletLoss
 from .center_loss import CenterLoss, ContrastiveCenterLoss
 from .clothes_based_adversarial_loss import ClothesBasedAdversarialLoss
-from .CMSM import Loss_CMSM
+
 from torch import nn
 
 def make_loss(cfg, num_classes):    # modified by gu
@@ -82,9 +82,7 @@ def make_loss(cfg, num_classes):    # modified by gu
                             TRI_LOSS = triplet(feat, target)[0]
                     cloth_mask_down = F.adaptive_avg_pool2d(target_mask, (24, 12))
                     B, N_patches, _ = attn_weights.shape
-                    # 4. 展平为 [B, N_patches, 1]，完美匹配 attn_weights 的形状！
                     cloth_mask_down = cloth_mask_down.view(B, N_patches, 1)
-                    # 4. 计算 MSE Loss (强迫模型的注意力关注非衣服的脸、手、腿)
                     loss_attn_mask = F.mse_loss(attn_weights, cloth_mask_down)
 
                     cla_loss = cla_criterion(cls_cloth_score, target, positive_mask)
