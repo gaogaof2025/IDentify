@@ -112,13 +112,6 @@ class build_transformer(nn.Module):
         self.cam_1 = CAM_Module(self.in_planes)
         self.sam = SpatialAttention()
 
-        # 这个小网络用来预测每个 Patch 是衣服还是非衣服
-        self.spatial_attn = nn.Sequential(
-            nn.Linear(self.in_planes, 256),
-            nn.ReLU(inplace=True),
-            nn.Linear(256, 1),
-            nn.Sigmoid()  # 输出 0~1 的权重
-        )
 
         # 为我们新提取的“非衣服特征 (Non-cloth Feature)”准备独立的 BN 和 分类器
         self.bottleneck_nc = nn.BatchNorm1d(self.in_planes)
@@ -133,8 +126,6 @@ class build_transformer(nn.Module):
         if get_text == True:
             prompts = self.prompt_learner(label)
             text_features = (self.text_encoder(prompts, self.prompt_learner.tokenized_prompts))
-            # text_features_original = (
-            #     self.text_encoder(prompts_original, self.prompt_learner.tokenized_prompts_original))
             return text_features
 
         if get_image == True:
@@ -158,38 +149,6 @@ class build_transformer(nn.Module):
             image_features_last, image_features, image_features_proj = self.image_encoder(x, cv_embed)
 
             if noise_img is not None:
-                noise_image_features_last, noise_image_features, noise_image_features_proj = self.image_encoder(
-                    noise_img, cv_embed)
-                #######################################################
-                # 计算注意力权重
-                attention_weights = torch.sigmoid(
-                    torch.sum(image_features * noise_image_features, dim=-1, keepdim=True))
-
-                # 动态调整特征
-                feature_diff = image_features - noise_image_features
-                feature_proj_diff = image_features_proj - noise_image_features_proj
-                cloth_noise = attention_weights * feature_diff
-                cloth_proj_noise = attention_weights * feature_proj_diff
-
-                image_features = image_features - cloth_noise
-                image_features_proj = image_features_proj - cloth_proj_noise
-                ###################################################
-
-                # 1. 拿出具有空间信息的 Patch Tokens (去除第0个CLS，剩下的是空间Patch)
-                spatial_features = image_features[:, 1:, :]  # Shape: [Batch, N_patches, 768]
-
-                # 2. 生成空间注意力权重 (模型自己学习每个Patch该关注多少)
-                attn_weights = self.spatial_attn(spatial_features)  # Shape: [Batch, N_patches, 1]
-
-                # 3. 把权重乘到 Patch 上，把衣服区域的特征抹除掉！
-                weighted_spatial_features = spatial_features * attn_weights
-
-                # 4. 把提纯后的 Patch 聚合成一个新的全局特征 (加权平均 pooling)
-                # 加 1e-8 是为了防止除以 0
-                img_feature_nc = weighted_spatial_features.sum(dim=1) / (attn_weights.sum(dim=1) + 1e-8)
-                feat_nc = self.bottleneck_nc(img_feature_nc)  # 新的非衣服特
-                cls_score_nc = self.classifier_nc(feat_nc)  # 新的非衣服特征分类分数
-                
 
             image_features_proj = self.cam(image_features_proj)
             image_features_proj = self.sam(image_features_proj)
@@ -287,26 +246,6 @@ class PromptLearner(nn.Module):
         self.num_class = num_class
         self.n_cls_ctx = n_cls_ctx
 
-        # === 原始图像的文本提示模板 ===
-        # ctx_init_original = "A photo of a X X X X person."
-        # ctx_init_original = ctx_init_original.replace("_", " ")
-
-        # tokenized_prompts_original = clip.tokenize(ctx_init_original).cuda()
-        # with torch.no_grad():
-        #     embedding_original = token_embedding(tokenized_prompts_original).type(dtype)
-        # self.tokenized_prompts_original = tokenized_prompts_original
-
-        # # 原始图像对应的可学习参数
-        # cls_vectors_original = torch.empty(num_class, n_cls_ctx, ctx_dim, dtype=dtype)
-        # nn.init.normal_(cls_vectors_original, std=0.02)
-        # self.cls_ctx_original = nn.Parameter(cls_vectors_original)  # 原始图像的文本向量
-
-        # self.token_prefix_original = embedding_original[:, :n_ctx + 1, :]
-        # self.token_suffix_original = embedding_original[:, n_ctx + 1 + n_cls_ctx:, :]
-
-        # self.num_class = num_class
-        # self.n_cls_ctx = n_cls_ctx
-
     def forward(self, label):
         # cls_ctx = self.cls_ctx[label]
         b = label.shape[0]
@@ -322,11 +261,4 @@ class PromptLearner(nn.Module):
             ],
             dim=1
         )
-        # cls_ctx_original = self.cls_ctx_original[label]
-        # prefix_original = self.token_prefix_original.expand(b, -1, -1)
-        # suffix_original = self.token_suffix_original.expand(b, -1, -1)
-        # prompts_original = torch.cat(
-        #     [prefix_original, cls_ctx_original, suffix_original],
-        #     dim=1)
-
         return prompts
