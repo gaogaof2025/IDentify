@@ -106,10 +106,6 @@ def do_train_stage1(cfg,
             loss_t2i = xent(text_features, image_features, target, target)
             
             loss_tcl = tcl_loss_fn(image_features,text_features,target)
-            # 原始图像 ↔ 原始文本
-            # loss_i2t_original = xent(img_feat_original, text_features_original, target, target)
-            # loss_t2i_original = xent(text_features_original, img_feat_original, target, tar1)
-
             loss = loss_i2t + loss_t2i + loss_tcl*0.5
 
             scaler.scale(loss).backward()
@@ -155,44 +151,3 @@ class TextConsistencyLoss(nn.Module):
     """
     TCL for CC-ReID
     """
-
-    def __init__(self):
-        super().__init__()
-
-    def forward(self, image_features, text_features, labels):
-        """
-        image_features : [B,C]
-        text_features  : [B,C]
-        labels         : [B]
-        """
-
-        image_features = F.normalize(image_features, dim=1)
-        text_features = F.normalize(text_features, dim=1)
-
-        # 每个样本自己的 Image-Text similarity
-        sim = (image_features * text_features).sum(dim=1)
-
-        loss = 0.
-        cnt = 0
-
-        unique_ids = labels.unique()
-
-        for pid in unique_ids:
-
-            idx = (labels == pid)
-
-            # 至少两个样本才能算variance
-            if idx.sum() < 2:
-                continue
-
-            sim_pid = sim[idx]
-
-            # 方差
-            loss += sim_pid.var(unbiased=False)
-
-            cnt += 1
-
-        if cnt == 0:
-            return torch.tensor(0.).to(image_features.device)
-
-        return loss / cnt
