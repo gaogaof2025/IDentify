@@ -13,8 +13,6 @@ import numpy as np
 import os
 import argparse
 from config import cfg
-# CUDA_VISIBLE_DEVICES=0 python train_clipreid.py --config_file configs/person/vit_clipreid_ltcc.yml
-# CUDA_VISIBLE_DEVICES=0 python train_clipreid.py --config_file configs/person/vit_clipreid_celebreid_light.yml
 
 def set_seed(seed):
     torch.manual_seed(seed)
