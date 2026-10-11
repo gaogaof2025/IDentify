@@ -61,8 +61,6 @@ class TextEncoder(nn.Module):
         x = x[torch.arange(x.shape[0]), tokenized_prompts.argmax(dim=-1)] @ self.text_projection 
         return x
 
-# from NFC import NFC
-from NFC_Enhance import nfc
 
 def l2_normalize(x, dim=-1):
     return x / (torch.norm(x, p=2, dim=dim, keepdim=True) + 1e-8)
@@ -112,19 +110,11 @@ class build_transformer(nn.Module):
         self.prompt_learner = PromptLearner(num_classes, dataset_name, clip_model.dtype, clip_model.token_embedding)
         self.text_encoder = TextEncoder(clip_model)
 
-        self.PRA = FAA_ViT(dim=self.in_planes_proj)
-        self.PRA_2 = FAA_ViT(dim=self.in_planes)
-        # self.eda = EfficientAdditiveAttention(in_dims=768, token_dim=768)
-
 
         self.cam = CAM_Module(self.in_planes_proj)
         self.cam_1 = CAM_Module(self.in_planes)
         #
         self.sam = SpatialAttention()
-        # self.simatt = SimAM()
-        #
-        # self.gf = GlobalFilter(self.in_planes, h=17, w=9)
-        # self.gf_proj = GlobalFilter(self.in_planes_proj, h=17, w=9)
 
     def forward(self, x = None, label=None, get_image = False, get_text = False, noise_img=None):
         if get_text == True:
@@ -154,42 +144,10 @@ class build_transformer(nn.Module):
 
                        # (32, 289, 768)           # (32, 289, 512)
             image_features_last, image_features, image_features_proj = self.image_encoder(x, cv_embed)
-            # image_features = NFC(image_features,5,5)
-            # image_features_proj = NFC(image_features_proj,5,5)
-            image_features = nfc(image_features,"knn",'mean',4) # B L D
-            image_features_proj = nfc(image_features_proj,"knn",'mean',4)
+
             if noise_img is not None:
                 noise_image_features_last, noise_image_features, noise_image_features_proj = self.image_encoder(noise_img, cv_embed)
                                              # (32, 289, 768)        # (32, 289, 512)
-                #-------------------------------------------------------------------------------------
-                # noise_image_features = nfc(noise_image_features, "knn", 'mean', 7)  # B L D
-                # noise_image_features_proj = nfc(noise_image_features_proj, "knn", 'mean', 7)
-                #######################################################
-                # 计算注意力权重
-                attention_weights = torch.sigmoid(
-                    torch.sum(image_features * noise_image_features, dim=-1, keepdim=True))
-
-
-                # 动态调整特征
-                feature_diff = image_features - noise_image_features
-                feature_proj_diff = image_features_proj - noise_image_features_proj
-                cloth_noise = attention_weights * feature_diff   # (32, 289, 768)
-                cloth_proj_noise = attention_weights * feature_proj_diff
-
-
-                image_features = image_features - cloth_noise  # (32, 289, 768)
-                image_features_proj = image_features_proj - cloth_proj_noise   # (32, 289, 512)
-                ####################################################
-
-            # image_features_proj = self.PRA(image_features_proj)
-            # image_features_last = self.PRA_2(image_features_last)
-            # image_features = self.PRA_2(image_features)
-            #-------------------------------------------------------
-
-            image_features_proj = self.cam(image_features_proj)
-            image_features_proj = self.sam(image_features_proj)
-            image_features = self.cam_1(image_features)
-            image_features = self.sam(image_features)
 
 
             img_feature_last = image_features_last[:,0]
@@ -255,7 +213,6 @@ class PromptLearner(nn.Module):
         super().__init__()
         # ctx_init = "A photo of a X X X X X X X X X person."
         ctx_init = "A photo of a X X X X person with X X cloth."
-        # ctx_init = "A photo of a person with X X X X X clothing and X X features."
 
         ctx_dim = 512
         # use given words to initialize context vectors
