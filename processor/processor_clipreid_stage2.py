@@ -12,8 +12,6 @@ from torch.cuda import amp
 import torch.distributed as dist
 from torch.nn import functional as F
 from loss.supcontrast import SupConLoss
-from aaa import linear_growth, sigmoid_growth, exponential_growth, cosine_growth,  \
-    sine_growth
 
 from torch.utils.tensorboard import SummaryWriter
 
