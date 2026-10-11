@@ -2,8 +2,6 @@ import logging
 import os
 import random
 # from processor.processor_clipreid_stage2 import add_noise
-from aaa import linear_growth, sigmoid_growth, exponential_growth, cosine_growth,  \
-    sine_growth
 import numpy as np
 import torch
 import torch.nn as nn
