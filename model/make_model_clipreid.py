@@ -113,7 +113,6 @@ class build_transformer(nn.Module):
         self.sam = SpatialAttention()
 
 
-        # 为我们新提取的“非衣服特征 (Non-cloth Feature)”准备独立的 BN 和 分类器
         self.bottleneck_nc = nn.BatchNorm1d(self.in_planes)
         self.bottleneck_nc.bias.requires_grad_(False)
         self.bottleneck_nc.apply(weights_init_kaiming)
