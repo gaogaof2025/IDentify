@@ -18,7 +18,6 @@ def make_loss(cfg, num_classes):    # modified by gu
     center_criterion = ContrastiveCenterLoss(num_classes=num_classes, feat_dim=feat_dim)  # center loss
     # center_criterion = CenterLoss(num_classes=num_classes, feat_dim=feat_dim, use_gpu=True)  # center loss
     cla_criterion = ClothesBasedAdversarialLoss(scale=16, epsilon=0.1)
-    # cmsm_criterion = Loss_CMSM()
     criterion_stripe = nn.CrossEntropyLoss()
     if 'triplet' in cfg.MODEL.METRIC_LOSS_TYPE:
         if cfg.MODEL.NO_MARGIN:
@@ -80,11 +79,6 @@ def make_loss(cfg, num_classes):    # modified by gu
                             TRI_LOSS = sum(TRI_LOSS)
                     else:
                             TRI_LOSS = triplet(feat, target)[0]
-                    cloth_mask_down = F.adaptive_avg_pool2d(target_mask, (24, 12))
-                    B, N_patches, _ = attn_weights.shape
-                    cloth_mask_down = cloth_mask_down.view(B, N_patches, 1)
-                    loss_attn_mask = F.mse_loss(attn_weights, cloth_mask_down)
-
                     cla_loss = cla_criterion(cls_cloth_score, target, positive_mask)
 
                     # id_2 = F.cross_entropy(cls_score_2, target)
